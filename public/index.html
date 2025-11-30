@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NENO → Euro | Off-Ramp</title>
+  <style>
+    body{margin:0;font-family:system-ui;background:#0a0e17;color:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh}
+    .card{background:#111827;padding:40px;border-radius:20px;width:90%;max-width:440px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+    h1{font-size:28px;text-align:center;margin-bottom:8px}
+    input{width:100%;padding:16px;margin:10px 0;border:none;border-radius:12px;background:#1f2937;color:#fff;font-size:17px}
+    button{width:100%;padding:18px;background:#00ff88;color:#000;font-weight:bold;border-radius:12px;border:none;font-size:19px;cursor:pointer;margin-top:15px}
+    .info{background:#1f2937;padding:20px;border-radius:12px;margin:20px 0;text-align:center}
+    .price{font-size:34px;font-weight:bold;color:#00ff88}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Vendi NENO → Ricevi Euro</h1>
+    <p style="text-align:center;opacity:.8">1 NENO = 1.000 € (prezzo fisso ufficiale)</p>
+
+    <input type="number" step="0.000001" id="neno" placeholder="Quanti NENO vuoi vendere?" required />
+    <input type="email" id="email" placeholder="Email per ricevuta" required />
+    <input type="text" id="name" placeholder="Nome e Cognome" required />
+    <input type="text" id="iban" placeholder="IBAN completo (IT…)" required />
+
+    <div class="info">
+      Riceverai <span class="price" id="eur">0,00 €</span><br>
+      <small style="opacity:.7">fee 2,5% inclusa – accredito 1-2 giorni</small>
+    </div>
+
+    <button onclick="sell()">VENDI NENO ORA</button>
+    <div id="result" style="margin-top:20px"></div>
+  </div>
+
+  <script>
+    document.getElementById('neno').addEventListener('input', () => {
+      const n = parseFloat(document.getElementById('neno').value) || 0;
+      document.getElementById('eur').textContent = (n * 1000 * 0.975).toFixed(2) + " €";
+    });
+
+    async function sell() {
+      const neno = document.getElementById('neno').value;
+      const email = document.getElementById('email').value;
+      const name = document.getElementById('name').value;
+      const iban = document.getElementById('iban').value;
+
+      if (!neno || !email || !name || !iban) return alert("Compila tutto");
+
+      const res = await fetch('/create-offramp', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({nenoAmount:neno, email, fullName:name, iban})
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        document.getElementById('result').innerHTML = `
+          <div style="background:#001a0d;padding:20px;border-radius:12px;color:#00ff88;text-align:center">
+            <h3>Paga prima con carta</h3>
+            <p>Invia poi <b>${data.nenoToSend} NENO</b><br>
+            al wallet:<br><code style="word-break:break-all">${data.wallet}</code></p>
+            <a href="${data.paymentUrl}" target="_blank">
+              <button style="background:#fff;color:#000;margin-top:15px">PAGA ORA CON CARTA</button>
+            </a>
+          </div>`;
+      } else {
+        alert(data.error || "Errore");
+      }
+    }
+  </script>
+</body>
+</html>
